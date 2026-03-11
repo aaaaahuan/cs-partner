@@ -147,6 +147,12 @@ class Overlay(QWidget):
         pixmap = None
         if image_path:
             full_path = get_resource_path(image_path)
+            if not os.path.exists(full_path):
+                # Fallback: Try looking inside cs_partner_data explicitly
+                # This handles cases where image_path is relative to data folder (images/foo.png)
+                # but get_resource_path is relative to EXE.
+                full_path = get_resource_path(os.path.join("cs_partner_data", image_path))
+            
             if os.path.exists(full_path):
                 pixmap = QPixmap(full_path)
         
@@ -197,6 +203,10 @@ class Overlay(QWidget):
         pixmap = None
         if image_path:
             full_path = get_resource_path(image_path)
+            if not os.path.exists(full_path):
+                # Fallback: Try looking inside cs_partner_data explicitly
+                full_path = get_resource_path(os.path.join("cs_partner_data", image_path))
+                
             if os.path.exists(full_path):
                 pixmap = QPixmap(full_path)
         

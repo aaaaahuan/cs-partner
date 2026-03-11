@@ -11,7 +11,12 @@ class Recorder:
     def __init__(self, data_loader, minimap_tracker):
         self.data_loader = data_loader
         self.tracker = minimap_tracker
-        self.sct = mss.mss()
+        # mss.mss() is not thread-safe if initialized once and used across threads.
+        # It's better to initialize it inside the method where it's used, 
+        # OR ensure it's used in the same thread.
+        # Since record_current_position is called from a hotkey (keyboard thread),
+        # we should initialize it there.
+        self.sct = None 
         # Use centralized data folder
         self.data_folder = self.data_loader.data_folder
         self.images_dir = os.path.join(self.data_folder, "images")
@@ -33,9 +38,10 @@ class Recorder:
         cv2.imwrite(minimap_path, minimap_img)
         
         # 3. Take Screenshot (Full Screen for Aiming)
-        monitor = self.sct.monitors[1]
-        screenshot = np.array(self.sct.grab(monitor))
-        screenshot = cv2.cvtColor(screenshot, cv2.COLOR_BGRA2BGR)
+        with mss.mss() as sct:
+            monitor = sct.monitors[1]
+            screenshot = np.array(sct.grab(monitor))
+            screenshot = cv2.cvtColor(screenshot, cv2.COLOR_BGRA2BGR)
         
         filename = f"custom_{timestamp}.png"
         file_path = os.path.join(self.images_dir, filename)

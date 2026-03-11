@@ -5,19 +5,23 @@ import os
 
 class MinimapTracker:
     def __init__(self, monitor_index=1):
-        self.sct = mss.mss()
-        try:
-            self.monitor = self.sct.monitors[monitor_index]
-        except IndexError:
-            self.monitor = self.sct.monitors[1]
+        # mss instance is NOT thread safe. 
+        # We should create a new instance when needed or manage it carefully.
+        # But for continuous tracking loop (Main Thread), one instance is fine.
+        # However, grab_minimap is also called by Recorder (Keyboard Thread)
+        # via tracker.grab_minimap(). This causes the crash!
+        
+        # Solution: Don't keep a persistent self.sct. 
+        # Create it inside grab_minimap or pass it in.
+        self.monitor_index = monitor_index
         
         # Minimap is usually in the top-left corner
         # These are approximations for 1920x1080 resolution
         self.minimap_region = {
             "top": 20,
             "left": 20,
-            "width": 300,
-            "height": 300
+            "width": 500,
+            "height": 350
         }
         
         # Method 1: Absolute Tracking (Simple)
@@ -33,14 +37,20 @@ class MinimapTracker:
         self.bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
 
     def grab_minimap(self):
-        region = {
-            "top": self.monitor["top"] + self.minimap_region["top"],
-            "left": self.monitor["left"] + self.minimap_region["left"],
-            "width": self.minimap_region["width"],
-            "height": self.minimap_region["height"]
-        }
-        img = np.array(self.sct.grab(region))
-        return cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
+        with mss.mss() as sct:
+            try:
+                monitor = sct.monitors[self.monitor_index]
+            except IndexError:
+                monitor = sct.monitors[1]
+                
+            region = {
+                "top": monitor["top"] + self.minimap_region["top"],
+                "left": monitor["left"] + self.minimap_region["left"],
+                "width": self.minimap_region["width"],
+                "height": self.minimap_region["height"]
+            }
+            img = np.array(sct.grab(region))
+            return cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
 
     def get_player_position(self):
         """
