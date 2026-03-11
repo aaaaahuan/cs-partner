@@ -10,6 +10,7 @@
 *   **雷达自适应**: 无论你使用固定雷达还是旋转雷达，智能算法都能精准识别你的位置。
 *   **安全无忧 (VAC Safe)**: 基于屏幕图像识别（小地图），完全不读取内存，真正的物理外挂。
 *   **云端构建**: 无需安装 Python，通过 GitHub Actions 一键生成 EXE。
+*   **本地构建**: 提供了 `build.bat` 脚本，双击即可在本地生成 EXE 文件。
 
 ## 环境要求
 
@@ -30,10 +31,21 @@
 ## 如何使用
 
 ### 1. 下载与运行
+#### 方式一：直接下载 (推荐)
 1.  访问本项目的 [GitHub Actions](https://github.com/YOUR_USERNAME/cs-partner/actions) 页面。
 2.  下载最新的 **CS2Partner-Windows**。
 3.  解压后双击 `CS2Partner.exe` 即可运行。
-4.  看到屏幕顶部绿色标签 "CS2 Partner Ready" 即代表运行成功。
+
+#### 方式二：本地构建 (针对开发者)
+如果你熟悉 Python，也可以自己构建：
+1.  安装 [Python 3.8+](https://www.python.org/downloads/) 并确保勾选 "Add Python to PATH"。
+2.  下载本项目源码。
+3.  双击运行根目录下的 `build.bat`。
+4.  脚本会自动安装依赖并打包。
+5.  完成后，你可以在 `dist/` 文件夹下找到 `CS2Partner.exe` 并运行。
+
+**运行成功标志**:
+看到屏幕顶部绿色标签 "CS2 Partner Ready" 即代表运行成功。
 
 ### 2. 录制你的第一个点位
 1.  进入游戏（单机跑图或死斗均可）。

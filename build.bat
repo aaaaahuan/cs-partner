@@ -8,7 +8,16 @@ if %errorlevel% neq 0 (
 )
 
 echo Installing dependencies...
-pip install -r requirements.txt
+echo Using Tsinghua Mirror for faster download...
+python -m pip install --upgrade pip -i https://pypi.tuna.tsinghua.edu.cn/simple
+python -m pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+python -m pip install pyinstaller -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+if %errorlevel% neq 0 (
+    echo Failed to install dependencies!
+    pause
+    exit /b
+)
 
 echo Cleaning up old builds...
 rmdir /s /q build dist
@@ -16,7 +25,7 @@ del /q *.spec
 
 echo Building Executable...
 echo Note: This might take a few minutes.
-pyinstaller --noconsole --onefile --name "CS2Partner" main.py
+python -m PyInstaller --noconsole --onefile --name "CS2Partner" main.py
 
 if %errorlevel% neq 0 (
     echo Build failed!

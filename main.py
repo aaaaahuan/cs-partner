@@ -31,12 +31,17 @@ class GameLogic:
     def loop(self):
         print("Starting Logic Loop...")
         
-        # Register Hotkey for Recording
-        keyboard.add_hotkey('F5', self.record_position)
-        # Register Display Mode Hotkeys
-        keyboard.add_hotkey('F1', lambda: self.set_display_mode(1)) # Mini
-        keyboard.add_hotkey('F2', lambda: self.set_display_mode(2)) # Full
-        
+        try:
+            # Register Hotkey for Recording
+            keyboard.add_hotkey('F5', self.record_position)
+            # Register Display Mode Hotkeys
+            keyboard.add_hotkey('F1', lambda: self.set_display_mode(1)) # Mini
+            keyboard.add_hotkey('F2', lambda: self.set_display_mode(2)) # Full
+            print("Hotkeys registered.")
+        except Exception as e:
+            print(f"Hotkey Error: {e}")
+            self.signals.show_toast.emit(f"Hotkey Error: Run as Admin!", 5000)
+            
         while self.running:
             # 1. Get Player Position
             # For now, we use the simple position tracker
@@ -126,17 +131,21 @@ class GameLogic:
     def record_position(self):
         print("Recording Position...")
         
-        # Use Recorder Module
-        name = f"Custom Nade {int(time.time())}"
-        success, msg = self.recorder.record_current_position(name)
-        
-        if success:
-            self.signals.show_toast.emit(f"Recorded: {name}", 3000)
-            # Reload Data
-            self.data_loader.reload()
-            self.grenades = self.data_loader.get_grenades(self.current_map)
-        else:
-            self.signals.show_toast.emit(f"Record Error: {msg}", 3000)
+        try:
+            # Use Recorder Module
+            name = f"Custom Nade {int(time.time())}"
+            success, msg = self.recorder.record_current_position(name)
+            
+            if success:
+                self.signals.show_toast.emit(f"Recorded: {name}", 3000)
+                # Reload Data
+                self.data_loader.reload()
+                self.grenades = self.data_loader.get_grenades(self.current_map)
+            else:
+                self.signals.show_toast.emit(f"Record Error: {msg}", 3000)
+        except Exception as e:
+            print(f"Record Crash: {e}")
+            self.signals.show_toast.emit(f"Record Crash: {e}", 5000)
 
 def main():
     app = QApplication(sys.argv)
