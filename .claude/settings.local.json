@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(python -c \"import sys; print\\(sys.version\\); import PyQt5; print\\(''PyQt5 ok''\\)\")",
+      "Bash(where python:*)",
+      "Bash(py --version)",
+      "Bash(ls /c/Python*)",
+      "Read(//c/Users/win10/AppData/Local/Programs/**)",
+      "Bash(find /c -name python.exe -maxdepth 6)",
+      "Bash(/c/Users/win10/miniconda3/envs/py311/python.exe -c \":*)",
+      "Bash(/c/Users/win10/miniconda3/python.exe -c \":*)",
+      "Bash(/c/Users/win10/miniconda3/envs/py311/python.exe -m pip install PyQt5 opencv-python-headless mss numpy keyboard -q)"
+    ]
+  }
+}

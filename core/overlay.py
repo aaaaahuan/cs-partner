@@ -6,9 +6,10 @@ import os
 from core.data_loader import get_resource_path
 
 class OverlaySignal(QObject):
-    update_hud = pyqtSignal(dict) # {active_grenade: {}, nearby_grenades: []}
-    show_toast = pyqtSignal(str, int) # message, duration_ms
-    set_mode = pyqtSignal(int) # 1: Mini, 2: Full
+    update_hud = pyqtSignal(dict)        # {active_grenade: {}, nearby_grenades: []}
+    show_toast = pyqtSignal(str, int)    # message, duration_ms
+    set_mode = pyqtSignal(int)           # 1: Mini, 2: Ghost
+    update_aim_point = pyqtSignal(object)  # (screen_x, screen_y, confidence) or None
 
 class Overlay(QWidget):
     def __init__(self, screen_width=1920, screen_height=1080):
@@ -22,6 +23,7 @@ class Overlay(QWidget):
         self.signals.update_hud.connect(self.update_state)
         self.signals.show_toast.connect(self.display_toast)
         self.signals.set_mode.connect(self.change_mode)
+        self.signals.update_aim_point.connect(self.update_aim_point)
         
         # Window Flags
         self.setWindowFlags(
@@ -38,10 +40,11 @@ class Overlay(QWidget):
         self.setGeometry(0, 0, screen_width, screen_height)
         
         # Data
-        self.active_grenade = None # The one we are standing on
-        self.nearby_grenades = [] # List of nearby grenades
+        self.active_grenade = None   # The one we are standing on
+        self.nearby_grenades = []    # List of nearby grenades
         self.toast_message = None
         self.toast_end_time = 0
+        self.aim_point = None        # (screen_x, screen_y, confidence) or None
         
         # Fonts
         self.title_font = QFont("Arial", 18, QFont.Bold)
@@ -68,6 +71,11 @@ class Overlay(QWidget):
         self.nearby_grenades = data.get("nearby_grenades", [])
         self.update()
 
+    def update_aim_point(self, result):
+        """接收 (screen_x, screen_y, confidence) 或 None。"""
+        self.aim_point = result
+        self.update()
+
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
@@ -88,6 +96,10 @@ class Overlay(QWidget):
         # 2. Draw Active Grenade Info (If standing on spot)
         if self.active_grenade:
             self.draw_active_info(painter)
+
+        # 3. Draw Aim Crosshair (if aim point tracked in current view)
+        if self.aim_point is not None:
+            self.draw_aim_crosshair(painter, *self.aim_point)
 
     def draw_status_bar(self, painter):
         # Small green label at top center
@@ -264,13 +276,48 @@ class Overlay(QWidget):
             painter.drawText(info_x, y, line)
             y += 25
 
+    def draw_aim_crosshair(self, painter, screen_x: int, screen_y: int, confidence: int):
+        """
+        在屏幕 (screen_x, screen_y) 绘制准星圆圈，指示玩家应将准星对准此处。
+        confidence 越高，圆圈越绿（高置信）；较低时显示橙色（中等置信）。
+        """
+        color = QColor(0, 255, 0) if confidence >= 25 else QColor(255, 165, 0)
+        pen = QPen(color, 2)
+        painter.setPen(pen)
+        painter.setBrush(Qt.NoBrush)
+
+        # 外圆：半径 28px
+        r_outer = 28
+        painter.drawEllipse(screen_x - r_outer, screen_y - r_outer, r_outer * 2, r_outer * 2)
+
+        # 十字线（中心小空白，避免遮挡准星）
+        gap = 6
+        arm = 18
+        painter.drawLine(screen_x - arm - gap, screen_y, screen_x - gap, screen_y)
+        painter.drawLine(screen_x + gap, screen_y, screen_x + arm + gap, screen_y)
+        painter.drawLine(screen_x, screen_y - arm - gap, screen_x, screen_y - gap)
+        painter.drawLine(screen_x, screen_y + gap, screen_x, screen_y + arm + gap)
+
+        # 标签文字（在圆圈右上方）
+        label_x = screen_x + r_outer + 6
+        label_y = screen_y - r_outer
+        if self.active_grenade:
+            aim_desc = self.active_grenade.get("aim_desc", "Aim Here")
+            grenade_type = self.active_grenade.get("type", "")
+            painter.setFont(QFont("Arial", 11, QFont.Bold))
+            painter.setPen(color)
+            painter.drawText(label_x, label_y, aim_desc)
+            painter.setFont(QFont("Arial", 10))
+            painter.setPen(QColor("white"))
+            painter.drawText(label_x, label_y + 18, grenade_type)
+
     def draw_toast(self, painter):
         cx, cy = self.width() // 2, self.height() // 4
         
         text = self.toast_message
         painter.setFont(self.toast_font)
         fm = painter.fontMetrics()
-        text_w = fm.width(text)
+        text_w = fm.horizontalAdvance(text)
         text_h = fm.height()
         
         # Draw Background

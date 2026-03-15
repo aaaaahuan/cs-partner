@@ -43,7 +43,7 @@ GRENADE_DATA = {
             "desc": "中路 VIP 烟雾弹 (瞬爆)",
             "stance": "T 家垃圾桶旁蹲下",
             "aim": "瞄准门框右上角",
-            "throw": THROW_run_JUMP
+            "throw": THROW_RUN_JUMP
         }
     ],
     "Inferno": [
