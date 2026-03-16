@@ -3,7 +3,21 @@ import threading
 import time
 import keyboard
 import os
+import ctypes
 from PyQt5.QtWidgets import QApplication
+
+
+def _ensure_admin():
+    """若非管理员则以管理员权限重启自身。"""
+    if not ctypes.windll.shell32.IsUserAnAdmin():
+        print("🚀 [Admin] Not running as admin, relaunching with elevation...")
+        ctypes.windll.shell32.ShellExecuteW(
+            None, "runas", sys.executable, " ".join(sys.argv), None, 1
+        )
+        sys.exit(0)
+
+
+_ensure_admin()
 from core.overlay import Overlay
 from core.data_loader import DataLoader, get_resource_path
 from core.minimap import MinimapTracker
@@ -29,7 +43,7 @@ class GameLogic:
         # 当前地图（后续可接入自动检测）
         self.current_map = "inferno"
         self.grenades = self.data_loader.get_grenades(self.current_map)
-        print(f"Loaded {len(self.grenades)} grenades for {self.current_map}")
+        print(f"🚀 [Init] map={self.current_map}  grenades_count={len(self.grenades)}")
 
     def loop(self):
         print("Starting Logic Loop...")
@@ -56,7 +70,6 @@ class GameLogic:
 
                 full_path = os.path.join(self.data_loader.data_folder, minimap_rel)
                 score = self.tracker.compare_current_view(full_path)
-
                 if score < SIMILARITY_THRESHOLD:
                     g_copy = g.copy()
                     g_copy["_score"] = score
@@ -67,6 +80,7 @@ class GameLogic:
                         active = g_copy
 
             nearby.sort(key=lambda x: x["_score"])
+            print(f"🚀 [Step1] best_score={best_score:.2f}  nearby_count={len(nearby)}  active={active.get('name') if active else None}")
 
             # ── Step 2：瞄准点追踪（只在有激活点位时执行）──
             aim_result = None
@@ -86,6 +100,7 @@ class GameLogic:
                         aim_result = self.aim_tracker.find_aim_point(
                             full_img_path, aim_x, aim_y
                         )
+                        print(f"🚀 [Step2] aim_x={aim_x}  aim_y={aim_y}  aim_result={aim_result}")
 
             # ── Step 3：更新 UI ──
             self.signals.update_hud.emit(
@@ -107,10 +122,12 @@ class GameLogic:
             success, msg = self.recorder.record_current_position(
                 name, map_name=self.current_map
             )
+            print(f"🚀 [Record] name={name}  success={success}  msg={msg}")
             if success:
                 self.signals.show_toast.emit(f"Recorded: {name}", 3000)
                 self.data_loader.reload()
                 self.grenades = self.data_loader.get_grenades(self.current_map)
+                print(f"🚀 [Record] grenades reloaded, count={len(self.grenades)}")
             else:
                 self.signals.show_toast.emit(f"Record Error: {msg}", 3000)
         except Exception as e:
@@ -134,8 +151,7 @@ def main():
     thread = threading.Thread(target=logic.loop, daemon=True)
     thread.start()
 
-    print("CS2 Partner started.")
-    print(f"Screen: {w}x{h}  Map: {logic.current_map}")
+    print(f"🚀 [Main] CS2 Partner started.  screen={w}x{h}  map={logic.current_map}")
     print("Ensure CS2 is in Fullscreen Windowed mode with cl_radar_always_centered 1")
 
     try:
